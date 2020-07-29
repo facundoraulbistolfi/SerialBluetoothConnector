@@ -9,6 +9,10 @@ const READY = 2;
 const UUID_SERVICE = "cc88c38f-5da3-4ae2-aaf0-9a22f8f4d5f7";
 const UUID_CHARACTERISTIC = "29619ec5-2799-4a46-8c81-fca529cd56f3";
 
+const TAM_HEADER = 100;
+const BYTES_REG = 7;
+const CANT_REG = 30;
+
 //Variable: Lista de dispositivos
 var foundedDevices = [];
 var buffer = [];
@@ -148,22 +152,50 @@ var app = {
     },
     // Recibir data (Como un array buffer)
     onReceiveMessage: function (buffer_in) {
-        var data = new Int8Array(buffer_in);
-        app.log("typeof buffer_in: " + typeof buffer_in);
-        app.log("typeof data: " + typeof data);
-        app.log("typeof buffer: " + typeof buffer);
-        app.log("IN: " + data);
+        var data = Array.from(new Int8Array(buffer_in));
+
+        //app.log("IN buffer_in: " + buffer_in);
+        //app.log("typeof buffer: " + typeof buffer);
+        //app.log("IN DATA: " + data);
         buffer = buffer.concat(data);
-        app.log("buffer: " + buffer.toString());
-        app.log("typeof buffer: " + typeof buffer);
-        if (buffer.length >= 124) {
-            document.getElementById("chat").innerHTML = buffer.toString();
-            buffer = [];
+        //app.log("buffer: " + buffer.toString());
+        //app.log("length buffer: " + buffer.length);
+        if (buffer.length >= (TAM_HEADER + BYTES_REG * CANT_REG)) {
+            //Procesar datos
+            //document.getElementById("chat").innerHTML = buffer.toString();
+            app.log("buffer: " + buffer.toString());
+            app.procesarBuffer();
+
         }
         /*
         for (var i in data)
             document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + " " + data[i];
         */
+    },
+    procesarBuffer: function () {
+        var mensaje = String.fromCharCode.apply(String, buffer.slice(0, TAM_HEADER));
+        document.getElementById("chat").innerHTML = "Header: " + mensaje + "\n";
+        app.log("Procesar lista de registros");
+        var listaRegistros = [CANT_REG];
+        for (var i = 0; i < CANT_REG; i++) {
+            app.log("Registro " + (i + 1));
+            var offset = TAM_HEADER + BYTES_REG * i;
+            listaRegistros[i] = {
+                "Dia": (buffer[offset++] + 1900) + "/" + buffer[offset++] + "/" + buffer[offset++],
+                "Hora": buffer[offset++] + ":" + buffer[offset++],
+                "Temp": app.getTemperatura(buffer[offset++], buffer[offset++])
+            };
+            document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + JSON.stringify(listaRegistros[i]) + "\n";
+        }
+        buffer = [];
+    },
+    getTemperatura: function (temp1, temp2) {
+        var temp = temp1 & 0x7;	// cargar 3 bits de MSB con una mascara
+        temp = temp << 8;
+        temp = (temp | temp2);	 // cargar los 8 bits restantes en LSB
+        if (temp1 > 0x80)	// procesar el signo
+            temp = temp * -1;
+        return (temp / 16);
     },
     // Boton cancelar conexion
     onCancelConnection: function () {

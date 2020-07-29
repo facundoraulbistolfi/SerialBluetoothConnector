@@ -11,6 +11,7 @@ const UUID_CHARACTERISTIC = "29619ec5-2799-4a46-8c81-fca529cd56f3";
 
 //Variable: Lista de dispositivos
 var foundedDevices = [];
+var buffer = [];
 
 var app = {
     // Application Constructor
@@ -112,11 +113,7 @@ var app = {
             bluetoothSerial.connect(device_id, () => {
                 app.openPage(2);
                 bluetoothSerial.clear(() => { app.log("Buffer cleared") }, app.onError);
-
-                bluetoothSerial.subscribe('\n', (data) => {
-                    app.log("IN: " + data);
-                    document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + "< " + data;
-                }, app.onError);
+                bluetoothSerial.subscribeRawData(app.onReceiveMessage, app.onError);
 
             }, app.onError);
         }
@@ -141,24 +138,37 @@ var app = {
     },
     // Enviar data
     onButtonSend: function () {
-        var send = document.getElementById("textSend").value;
-        app.log("OUT: " + send);
-        bluetoothSerial.write(send + "\r\n", () => {
-            document.getElementById("textSend").value = "";
-            document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + "> " + send + "\n";
-            app.log("Texto enviado");
+        var send = new Uint8Array([12]);
+        app.log("SEND COMMAND");
+        bluetoothSerial.write(send, () => {
+            document.getElementById("chat").innerHTML = "";
+            app.log("Comando enviado");
+            buffer = [];
         }, app.onError);
     },
-    // Recibir data
-    onReceiveMessage: function (data) {
-        //var bytes = new Uint8Array(data);
+    // Recibir data (Como un array buffer)
+    onReceiveMessage: function (buffer_in) {
+        var data = new Int8Array(buffer_in);
+        app.log("typeof buffer_in: " + typeof buffer_in);
+        app.log("typeof data: " + typeof data);
+        app.log("typeof buffer: " + typeof buffer);
         app.log("IN: " + data);
-        document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + "< " + data + "\n";
+        buffer = buffer.concat(data);
+        app.log("buffer: " + buffer.toString());
+        app.log("typeof buffer: " + typeof buffer);
+        if (buffer.length >= 124) {
+            document.getElementById("chat").innerHTML = buffer.toString();
+            buffer = [];
+        }
+        /*
+        for (var i in data)
+            document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + " " + data[i];
+        */
     },
     // Boton cancelar conexion
     onCancelConnection: function () {
         if (confirm("Desea terminar la conexión?")) {
-            bluetoothSerial.unsubscribe(() => {
+            bluetoothSerial.unsubscribeRawData(() => {
                 app.log("Cerrar conexion");
                 app.openPage(1);
             }, app.onError);

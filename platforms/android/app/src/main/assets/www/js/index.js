@@ -9,10 +9,14 @@ const READY = 2;
 const UUID_SERVICE = "cc88c38f-5da3-4ae2-aaf0-9a22f8f4d5f7";
 const UUID_CHARACTERISTIC = "29619ec5-2799-4a46-8c81-fca529cd56f3";
 
-const TAM_HEADER = 100;
-const BYTES_REG = 7;
-const CANT_REG = 30;
+const COMMAND_DATA = 'w';
+const COMMAND_HEADER = 'h';
+const COMMAND_SET_HOUR = 's';
+const COMMAND_GET_HOUR = 'g';
 
+const BYTES_REG = 8;
+const CARACTER_END_ROW = (new Uint8Array([0x3b]))[0];
+const CARACTER_END_DATA = (new Uint8Array([0xff]))[0];
 //Variable: Lista de dispositivos
 var foundedDevices = [];
 var buffer = [];
@@ -29,7 +33,8 @@ var app = {
         document.getElementById("tab3").addEventListener("click", () => { app.openPage(3) });
         document.getElementById("botonRefresh").addEventListener("click", app.refreshDevices);
         //document.getElementById("botonCancel").addEventListener("click", app.cancelRefresh);
-        document.getElementById("buttonSend").addEventListener("click", app.onButtonSend);
+        document.getElementById("buttonData").addEventListener("click", app.onButtonSendData);
+        document.getElementById("buttonHeader").addEventListener("click", app.onButtonSendHeader);
         document.getElementById("buttonClear").addEventListener("click", app.onClearChat);
         document.getElementById("botonCancelCon").addEventListener("click", app.onCancelConnection);
         //Detectar plataforma
@@ -117,8 +122,6 @@ var app = {
             bluetoothSerial.connect(device_id, () => {
                 app.openPage(2);
                 bluetoothSerial.clear(() => { app.log("Buffer cleared") }, app.onError);
-                bluetoothSerial.subscribeRawData(app.onReceiveMessage, app.onError);
-
             }, app.onError);
         }
     },
@@ -140,32 +143,42 @@ var app = {
         document.getElementById(tabName).className += " active";
         //evt.currentTarget.className += " active";
     },
-    // Enviar data
-    onButtonSend: function () {
-        var send = new Uint8Array([12]);
-        app.log("SEND COMMAND");
-        bluetoothSerial.write(send, () => {
+    //Enviar comando header
+    onButtonSendHeader: function () {
+        bluetoothSerial.write("PUTA MADRE", () => {
+            app.log("Comando header");
+        }, app.onError);
+    },
+    // Enviar comando data
+    onButtonSendData: function () {
+        var send = new Uint8Array([COMMAND_DATA]);
+        app.log("SEND DATA COMMAND");
+        bluetoothSerial.write(COMMAND_DATA, () => {
             document.getElementById("chat").innerHTML = "";
             app.log("Comando enviado");
             buffer = [];
+            bluetoothSerial.subscribeRawData(app.onReceiveMessageData, app.onError);
         }, app.onError);
     },
     // Recibir data (Como un array buffer)
-    onReceiveMessage: function (buffer_in) {
-        var data = Array.from(new Int8Array(buffer_in));
+    onReceiveMessageData: function (buffer_in) {
 
-        //app.log("IN buffer_in: " + buffer_in);
-        //app.log("typeof buffer: " + typeof buffer);
-        //app.log("IN DATA: " + data);
+        //Tomo los datos del buffer y los paso a un array
+        var data = Array.from(new Uint8Array(buffer_in));
         buffer = buffer.concat(data);
-        //app.log("buffer: " + buffer.toString());
-        //app.log("length buffer: " + buffer.length);
-        if (buffer.length >= (TAM_HEADER + BYTES_REG * CANT_REG)) {
-            //Procesar datos
-            //document.getElementById("chat").innerHTML = buffer.toString();
+
+
+        app.log("Recibi data pa " + buffer[buffer.length - 1]);
+        app.log("comparo con " + CARACTER_END_DATA);
+        app.log(buffer)
+
+        //Compruebo de que si el ultimo caracter un FF, se termina la trasmision
+        if (buffer[buffer.length - 1] == CARACTER_END_DATA) {
             app.log("buffer: " + buffer.toString());
             app.procesarBuffer();
-
+            bluetoothSerial.unsubscribeRawData(() => {
+                app.log("DATA RECIBIDA");
+            }, app.onError);
         }
         /*
         for (var i in data)
@@ -173,19 +186,28 @@ var app = {
         */
     },
     procesarBuffer: function () {
-        var mensaje = String.fromCharCode.apply(String, buffer.slice(0, TAM_HEADER));
-        document.getElementById("chat").innerHTML = "Header: " + mensaje + "\n";
+        //var mensaje = String.fromCharCode.apply(String, buffer.slice(0, TAM_HEADER));
+        //document.getElementById("chat").innerHTML = "Header: " + mensaje + "\n";
         app.log("Procesar lista de registros");
-        var listaRegistros = [CANT_REG];
-        for (var i = 0; i < CANT_REG; i++) {
+        var listaRegistros = [];
+        var ultReg = false;
+        var i = 0;
+        while (!ultReg) {
             app.log("Registro " + (i + 1));
-            var offset = TAM_HEADER + BYTES_REG * i;
+            var offset = BYTES_REG * i;
             listaRegistros[i] = {
-                "Dia": (buffer[offset++] + 1900) + "/" + buffer[offset++] + "/" + buffer[offset++],
+                "Dia": (buffer[offset++] + 2000) + "/" + buffer[offset++] + "/" + buffer[offset++],
                 "Hora": buffer[offset++] + ":" + buffer[offset++],
-                "Temp": app.getTemperatura(buffer[offset++], buffer[offset++])
+                "Temp": app.getTemperatura(buffer[offset++], buffer[offset++]),
+                "end": buffer[offset++]
             };
             document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + JSON.stringify(listaRegistros[i]) + "\n";
+
+            ultReg = (listaRegistros[i].end == CARACTER_END_ROW) ? false : true;
+            app.log(ultReg);
+            app.log("Ultimo registro " + listaRegistros[i].end);
+            app.log("CARACTER_END_ROW " + CARACTER_END_ROW);
+            i++;
         }
         buffer = [];
     },

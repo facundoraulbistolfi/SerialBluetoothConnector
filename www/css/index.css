@@ -1,26 +1,22 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
 * {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     /* make transparent link selection, adjust last value opacity 0 to 1.0 */
 }
+
+:root {
+    --black: #000000;
+    --background: #14213d;
+    --primary: #4a89dc;
+    --secondary: #5d9cec;
+    --wheat: #e5e5e5;
+    --white: #ffffff;
+    /* accessible everywhere */
+}
+
+/*
+Paleta: 
+https://coolors.co/000000-14213d-4a89dc-5d9cec-a4c7f4-e5e5e5-ffffff
+*/
 
 body {
     -webkit-touch-callout: none;
@@ -29,8 +25,7 @@ body {
     /* prevent webkit from resizing text to fit */
     -webkit-user-select: none;
     /* prevent copy paste, to allow, change 'none' to 'text' */
-    background-color: #E4E4E4;
-    background-image: linear-gradient(top, #A7A7A7 0%, #E4E4E4 51%);
+    background: white;
     font-family: system-ui, -apple-system, -apple-system-font, 'Segoe UI', 'Roboto', sans-serif;
     font-size: 12px;
     /*height: 100vh*/
@@ -54,8 +49,14 @@ ul.tab {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    border: 1px solid #ccc;
-    background-color: #f1f1f1;
+    border: 1px solid #14213d;
+    background-color: #4a89dc;
+}
+
+/* Change background color of links on hover */
+
+ul.tab li a:hover {
+    background-color: #5d9cec;
 }
 
 /* Float the list items side by side */
@@ -76,16 +77,10 @@ ul.tab li a {
     font-size: 17px;
 }
 
-/* Change background color of links on hover */
-
-ul.tab li a:hover {
-    background-color: #ddd;
-}
-
 /* Create an active/current tablink class */
 
 ul.tab li a:focus, .active {
-    background-color: #ccc;
+    background-color: white;
 }
 
 /* Style the tab content */
@@ -94,9 +89,11 @@ ul.tab li a:focus, .active {
     display: none;
     height: -webkit-fill-available;
     padding: 6px 12px;
-    border: 1px solid #ccc;
+    border: 1px solid #e5e5e5;
     border-top: none;
 }
+
+/* Style device table */
 
 .tabla-dispositivos {
     width: 100%;
@@ -104,11 +101,40 @@ ul.tab li a:focus, .active {
     border-collapse: collapse;
 }
 
-.tabla-dispositivos th, tr {
-    margin-top: 2px;
-    margin-bottom: 2px;
-    border-bottom: 1px solid black;
+.tabla-dispositivos th {
+    background-color: #5d9cec;
+    color: white;
 }
+
+.tabla-dispositivos tr:nth-child(even) {
+    background-color: #A4C7F4;
+}
+
+.tabla-dispositivos td {
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+/* Sytle buttons */
+
+.button {
+    margin-top: 2px;
+    background-color: #5d9cec;
+    border-radius: 8px;
+    border: 1px groove black;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 30px;
+    padding: 8px 20px;
+}
+
+.button:hover {
+    background-color: #4a89dc;
+}
+
+/* Other styles */
 
 textarea {
     height: inherit;
@@ -116,15 +142,4 @@ textarea {
 
 .app-label {
     font-size: 1.5em;
-}
-
-.button {
-    margin-top: 2px;
-    background-color: gray;
-    border: 1px black;
-    color: white;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
 }

@@ -59,16 +59,15 @@ var app = {
     refreshDevices: function () {
         // Borrar lista
         foundedDevices = [];
+
         //Actualizar elementos visuales
+        document.getElementById("dispositivos").style.visibility = "visible";
         document.getElementById("tabla_dispositivos").innerHTML = "";
-        //document.getElementById("botonRefresh").innerHTML = "Buscando...";
-        //document.getElementById("botonRefresh").disabled = true;
-        document.getElementById("botonCancel").disabled = false;
 
         //En el caso de ser una aplicación android, los dispositivos que no estan emparejados
         //se deben traer con bluetoothSerial.discoverUnpaired()
         if (window.cordova.platformId === "android")
-            bluetoothSerial.discoverUnpaired(app.actualizarLista, app.onError);
+            bluetoothSerial.discoverUnpaired(app.actualizarListaUnpaired, app.onError);
 
         //bluetoothSerial.list()
         //En android: trae los dispositivos emparejados
@@ -90,10 +89,19 @@ var app = {
     },
     actualizarLista: function (list) {
         app.log("Actualizar lista");
+        list.forEach((x) => { x.status = (window.cordova.platformId === "android") ? "Paired" : "Near"; });
         list.forEach(app.addToList);
         document.getElementById("botonRefresh").disabled = false;
-        document.getElementById("botonCancel").disabled = true;
-        document.getElementById("botonRefresh").innerHTML = "Refresh";
+        //document.getElementById("botonCancel").disabled = true;
+        //document.getElementById("botonRefresh").innerHTML = "Refresh";
+    },
+    actualizarListaUnpaired: function (list) {
+        app.log("Actualizar lista");
+        list.forEach((x) => { x.status = "Near" });
+        list.forEach(app.addToList);
+        document.getElementById("botonRefresh").disabled = false;
+        //document.getElementById("botonCancel").disabled = true;
+        //document.getElementById("botonRefresh").innerHTML = "Refresh";
     },
     //Añadir elemento a la lista
     addToList: function (result) {
@@ -105,7 +113,8 @@ var app = {
             var listItem = document.createElement('tr');
             listItem.innerHTML =
                 '<td class="">' + result.id + '</td>' +
-                '<td class="">' + result.name + '</td>';
+                '<td class="">' + result.name + '</td>' +
+                '<td class="">' + result.status + '</td>';
             document.getElementById("tabla_dispositivos").appendChild(listItem);
             listItem.addEventListener('click', () => { app.bleConnectionRequest(result.id) });
         }
@@ -145,13 +154,12 @@ var app = {
     },
     //Enviar comando header
     onButtonSendHeader: function () {
-        bluetoothSerial.write("PUTA MADRE", () => {
+        bluetoothSerial.write(COMMAND_HEADER, () => {
             app.log("Comando header");
         }, app.onError);
     },
     // Enviar comando data
     onButtonSendData: function () {
-        var send = new Uint8Array([COMMAND_DATA]);
         app.log("SEND DATA COMMAND");
         bluetoothSerial.write(COMMAND_DATA, () => {
             document.getElementById("chat").innerHTML = "";
@@ -167,17 +175,10 @@ var app = {
         var data = Array.from(new Uint8Array(buffer_in));
         buffer = buffer.concat(data);
 
-
-        app.log("Recibi data pa " + buffer[buffer.length - 1]);
-        app.log("comparo con " + CARACTER_END_DATA);
-        app.log(buffer)
-
         //Compruebo de que si el ultimo caracter un FF, se termina la trasmision
         if (buffer[buffer.length - 1] == CARACTER_END_DATA) {
-            app.log("buffer: " + buffer.toString());
-            app.procesarBuffer();
+            app.procesarBufferData();
             bluetoothSerial.unsubscribeRawData(() => {
-                app.log("DATA RECIBIDA");
             }, app.onError);
         }
         /*
@@ -185,10 +186,11 @@ var app = {
             document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + " " + data[i];
         */
     },
-    procesarBuffer: function () {
+    procesarBufferData: function () {
         //var mensaje = String.fromCharCode.apply(String, buffer.slice(0, TAM_HEADER));
         //document.getElementById("chat").innerHTML = "Header: " + mensaje + "\n";
         app.log("Procesar lista de registros");
+        app.log(buffer);
         var listaRegistros = [];
         var ultReg = false;
         var i = 0;
@@ -196,9 +198,9 @@ var app = {
             app.log("Registro " + (i + 1));
             var offset = BYTES_REG * i;
             listaRegistros[i] = {
-                "Dia": (buffer[offset++] + 2000) + "/" + buffer[offset++] + "/" + buffer[offset++],
-                "Hora": buffer[offset++] + ":" + buffer[offset++],
-                "Temp": app.getTemperatura(buffer[offset++], buffer[offset++]),
+                "Dia": (buffer[offset++]) + "/" + buffer[offset++] + "/" + buffer[offset++],
+                "Hora": buffer[offset++] + ":" + buffer[offset++] + ":" + buffer[offset++],
+                "Temp": app.getTemperatura(buffer[offset++]),
                 "end": buffer[offset++]
             };
             document.getElementById("chat").innerHTML = document.getElementById("chat").innerHTML + JSON.stringify(listaRegistros[i]) + "\n";
@@ -211,6 +213,13 @@ var app = {
         }
         buffer = [];
     },
+    getTemperatura: function (temp) {
+        if (temp > 0x80)	// procesar el signo
+            temp = temp * -1;
+        return (temp / 16);
+    },
+    /*
+    Version vieja
     getTemperatura: function (temp1, temp2) {
         var temp = temp1 & 0x7;	// cargar 3 bits de MSB con una mascara
         temp = temp << 8;
@@ -218,7 +227,7 @@ var app = {
         if (temp1 > 0x80)	// procesar el signo
             temp = temp * -1;
         return (temp / 16);
-    },
+    },*/
     // Boton cancelar conexion
     onCancelConnection: function () {
         if (confirm("Desea terminar la conexión?")) {

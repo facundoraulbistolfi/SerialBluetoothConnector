@@ -48,40 +48,36 @@
         </ul>
 
         <div id="tab_cont1" class="tabcontent active">
-            <div>
-                <button id="botonRefresh" class="button"> REFRESH </button>
-                <button id="botonCancel" class="button" disabled style="visibility: hidden;"> CANCEL </button>
-            </div>
-            <!--
-            <div>
-                <strong>PLATFORM: </strong> <label id="platformId"> ... </label>
-            </div>
-            
-            <div>
-                <strong>BLUETOOTH: </strong> <label id="btStatus"> ... </label></div>
-            -->
+
+
             <div class="app-label">
+                <button id="botonRefresh" class="button"> REFRESH </button>
+                <hr>
                 <strong>STATUS: </strong> <label id="labelStatus"> Waiting </label>
             </div>
-            <hr>
-            <label> Select device to connect </label>
-            <table class="tabla-dispositivos">
-                <thead>
-                    <tr>
-                        <th class="">Id</th>
-                        <th class="">Name</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla_dispositivos">
-                </tbody>
-            </table>
+            <div id="dispositivos" style="visibility: hidden;">
+                <div class="app-label"><label> Select device to connect </label></div>
+                <table class="tabla-dispositivos">
+                    <thead>
+                        <tr>
+                            <th class="">Id</th>
+                            <th class="">Name</th>
+                            <th class="">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla_dispositivos">
+                    </tbody>
+                </table>
+            </div>
+
         </div>
 
         <div id="tab_cont2" class="tabcontent">
-            <button id="buttonData" class="button">DATA</button>
-            <button id="buttonHeader" class="button">HEADER</button>
+
+            <button id="buttonData" class="button">GET DATA</button>
+            <button id="buttonHeader" class="button">GET INFO</button>
             <button id="buttonClear" class="button">CLEAR</button>
-            <button id="botonCancelCon" class="button">CANCEL CONNECTION</button>
+            <button id="botonCancelCon" class="button">CANCEL</button>
             <hr>
             <strong>Chat: </strong>
             <textarea style="width: 100%;" readonly id="chat"></textarea>
